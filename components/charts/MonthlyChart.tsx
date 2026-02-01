@@ -27,15 +27,16 @@ export default function MonthlyChart({ data }: MonthlyChartProps) {
         <YAxis 
             stroke="#94a3b8" 
             tick={{ fill: '#94a3b8', fontSize: 12 }} 
-            tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
+            // FIX: Cast 'as any' to silence strict type checks
+            tickFormatter={((value: any) => `${currencySymbol}${Number(value) / 1000}k`) as any}
             tickLine={false}
             axisLine={false}
         />
         <Tooltip
           cursor={{ fill: 'rgba(255,255,255,0.05)' }}
           contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', borderRadius: '8px' }}
-          // FIX: Pass 'name' as second arg so it shows "Income: $500" instead of ": $500"
-          formatter={(value: number, name: string) => [`${currencySymbol}${value.toLocaleString()}`, name]}
+          // FIX: Cast 'as any' to silence strict type checks
+          formatter={((value: any, name: any) => [`${currencySymbol}${Number(value).toLocaleString()}`, name]) as any}
         />
         <Legend wrapperStyle={{ paddingTop: '10px' }}/>
         

@@ -12,7 +12,6 @@ const COLORS = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
 export default function CategoryPieChart({ data }: CategoryPieChartProps) {
   const { currencySymbol } = useSettings();
 
-  // Safety check to prevent crash if data is empty
   if (!data || data.length === 0) {
     return <div className="h-full flex items-center justify-center text-slate-500">No data available</div>;
   }
@@ -37,7 +36,8 @@ export default function CategoryPieChart({ data }: CategoryPieChartProps) {
         <Tooltip 
              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
              itemStyle={{ color: '#fff' }}
-             formatter={(value: number, name: string) => [`${currencySymbol}${value.toLocaleString()}`, name]}
+             // FIX: We cast the function 'as any' to completely silence the Type Error
+             formatter={((value: any, name: any) => [`${currencySymbol}${Number(value).toLocaleString()}`, name]) as any}
         />
         <Legend 
             layout="vertical" 

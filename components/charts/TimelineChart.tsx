@@ -18,13 +18,12 @@ interface TimelineChartProps {
 }
 
 export default function TimelineChart({ data }: TimelineChartProps) {
-  // Format numbers for tooltip
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: any) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       maximumFractionDigits: 0,
-    }).format(value);
+    }).format(Number(value));
   };
 
   return (
@@ -57,7 +56,8 @@ export default function TimelineChart({ data }: TimelineChartProps) {
         <YAxis 
           stroke="#94a3b8" 
           tick={{ fill: '#94a3b8', fontSize: 12 }}
-          tickFormatter={(value) => `$${value / 1000}k`}
+          // FIX: Cast as any
+          tickFormatter={((value: any) => `$${Number(value) / 1000}k`) as any}
           tickLine={false}
           axisLine={false}
         />
@@ -70,22 +70,18 @@ export default function TimelineChart({ data }: TimelineChartProps) {
             color: '#fff',
           }}
           itemStyle={{ color: '#fff', padding: '2px 0' }}
-          // --- FIX: Pass 'name' through so labels appear ---
-          formatter={(value: number, name: string) => [formatCurrency(value), name]}
+          // FIX: Cast as any
+          formatter={((value: any, name: any) => [formatCurrency(value), name]) as any}
         />
 
         <Legend wrapperStyle={{ paddingTop: '20px' }} />
 
-        {/* Areas for background trend */}
         <Area type="monotone" dataKey="income" fill="url(#colorIncome)" stroke="none" />
         <Area type="monotone" dataKey="expense" fill="url(#colorExpense)" stroke="none" />
 
-        {/* Bars for Volume */}
         <Bar dataKey="income" name="Income" barSize={20} fill="#10b981" radius={[4, 4, 0, 0]} />
         <Bar dataKey="expense" name="Expense" barSize={20} fill="#f43f5e" radius={[4, 4, 0, 0]} />
 
-        {/* Lines for Statistics */}
-        {/* We hide these from the tooltip slightly by not giving them a name, or keep them for clarity */}
         <Line 
           type="monotone" 
           dataKey="income" 
