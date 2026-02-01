@@ -1,54 +1,66 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { signToken } from '@/lib/auth/jwt';
-import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
-// DIRECT RELATIVE IMPORT
-import { logActivity } from '../../../../lib/logger';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    // 1. Check User
+    // 1. Validation
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
+    }
+
+    // 2. Find User (Select 'password' explicitly)
     const users: any = await query({
-        query: 'SELECT * FROM users WHERE email = ?',
-        values: [email],
+      query: 'SELECT * FROM users WHERE email = ?',
+      values: [email],
     });
 
     if (users.length === 0) {
-        return NextResponse.json({ error: 'User not found' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
     const user = users[0];
-    
-    // --- FIX: Check 'password_hash' instead of 'password' ---
-    if (!user.password_hash) {
-        return NextResponse.json({ error: 'Account setup incomplete (No Password)' }, { status: 401 });
+
+    // 3. Safety Check: Does the user have a password set?
+    if (!user.password) {
+         return NextResponse.json({ error: 'Account setup incomplete. Please contact support or re-register.' }, { status: 401 });
     }
 
-    // 2. Check Password (using password_hash)
-    const isValid = await bcrypt.compare(password, user.password_hash);
-    
+    // 4. Verify Password (Compare input vs user.password)
+    const isValid = await bcrypt.compare(password, user.password);
+
     if (!isValid) {
-        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    // 3. Generate Token
-    const token = signToken({ userId: user.id, email: user.email });
-    cookies().set('auth_token', token, { httpOnly: true, secure: true });
+    // 5. Generate Token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name },
+      process.env.JWT_SECRET || 'default_secret',
+      { expiresIn: '7d' }
+    );
 
-    // 4. LOG ACTIVITY
-    try {
-        await logActivity(user.id, 'LOGIN', 'User logged in');
-    } catch (e) {
-        console.error("Logging failed:", e);
-    }
+    // 6. Set Cookie
+    cookies().set({
+      name: 'auth_token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
 
-    return NextResponse.json({ message: 'Login successful', user: { id: user.id, name: user.name, email: user.email } });
+    return NextResponse.json({ 
+        message: 'Login successful',
+        user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url } 
+    });
 
   } catch (error: any) {
     console.error("Login Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
