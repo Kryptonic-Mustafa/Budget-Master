@@ -1,0 +1,52 @@
+{
+  "name": "personal-budget-master",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:migrate": "node db/migrations/migrate.js",
+    "db:seed": "node db/seeds/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.0",
+    "countries-list": "^3.2.2",
+    "date-fns": "^3.3.1",
+    "gsap": "^3.12.5",
+    "jsonwebtoken": "^9.0.2",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "lucide-react": "^0.330.0",
+    "mysql2": "^3.9.1",
+    "next": "14.1.0",
+    "papaparse": "^5.5.3",
+    "react": "^18",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18",
+    "react-dropzone": "^14.4.0",
+    "recharts": "^3.7.0",
+    "sweetalert2": "^11.26.17",
+    "sweetalert2-react-content": "^5.1.1",
+    "tailwind-merge": "^2.2.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5"
+  }
+}
