@@ -16,7 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await fetch('/api/auth/me');
+        // FIX: Add 'no-store' to prevent caching old results
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         const data = await res.json();
         if (data.user) {
           setUser(data.user);
