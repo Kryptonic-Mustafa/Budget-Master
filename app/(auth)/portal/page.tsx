@@ -23,28 +23,32 @@ export default function AuthPortal() {
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     
     try {
+      // FIX: Construct the payload manually to map 'fullName' to 'name'
+      const payload = isLogin 
+        ? { email: formData.email, password: formData.password }
+        : { 
+            name: formData.fullName, // <--- MAPPING FIX HERE
+            email: formData.email, 
+            password: formData.password 
+          };
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload) // Send the fixed payload
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // If registering, auto-switch to login or auto-login (optional)
-        // For now, we just redirect to overview on success
-        if (!isLogin) {
-             alert('Account created! Please log in.');
-             setIsLogin(true);
-        } else {
-             router.push('/overview');
-        }
+        // Success! Redirect to overview (Auto-login works for both now)
+        router.push('/overview');
       } else {
         alert(data.error || 'Authentication failed');
       }
     } catch (err) {
       console.error(err);
+      alert('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
