@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
-// 1. Validation Schema (Security Layer)
+// 1. Validation Schema (Updated to match DB 'name')
 const RegisterSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { fullName, email, password } = result.data;
+    const { name, email, password } = result.data;
 
     // 3. Check if user exists
     const existingUsers: any = await query({
@@ -38,28 +40,36 @@ export async function POST(req: Request) {
     // 4. Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5. Insert New User
+    // 5. Insert New User (FIXED: Using 'name' and 'password' columns)
     const insertResult: any = await query({
-      query: `INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)`,
-      values: [fullName, email, hashedPassword],
+      query: `INSERT INTO users (name, email, password) VALUES (?, ?, ?)`,
+      values: [name, email, hashedPassword],
     });
 
     const newUserId = insertResult.insertId;
 
-    // 6. SETUP DEFAULTS (Improve User Experience)
-    // Create a default "Cash Wallet"
+    // 6. SETUP DEFAULTS
+    
+    // A. Create Default Settings
+    await query({
+      query: 'INSERT INTO settings (user_id) VALUES (?)',
+      values: [newUserId],
+    });
+
+    // B. Create a default "Cash Wallet"
     await query({
       query: `INSERT INTO accounts (user_id, name, type, balance, color) VALUES (?, ?, ?, ?, ?)`,
       values: [newUserId, 'Cash Wallet', 'WALLET', 0.00, '#10b981']
     });
 
-    // Copy default categories to this user
-    // (Since we are handling multi-tenancy manually without FKs)
+    // C. Copy default categories to this user
     const defaults = [
       ['Salary', 'INCOME', 'wallet'],
       ['Food', 'EXPENSE', 'utensils'],
       ['Rent', 'EXPENSE', 'home'],
       ['Shopping', 'EXPENSE', 'shopping-bag'],
+      ['Transport', 'EXPENSE', 'car'],
+      ['Entertainment', 'EXPENSE', 'tv'],
     ];
 
     for (const cat of defaults) {
@@ -68,6 +78,22 @@ export async function POST(req: Request) {
         values: [newUserId, cat[0], cat[1], cat[2]]
       });
     }
+
+    // 7. AUTO-LOGIN (Generate Token & Set Cookie)
+    const token = jwt.sign(
+      { userId: newUserId, email, name },
+      process.env.JWT_SECRET || 'default_secret',
+      { expiresIn: '7d' }
+    );
+
+    cookies().set({
+      name: 'auth_token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
 
     return NextResponse.json({ 
       message: 'User registered successfully',
